@@ -16,11 +16,6 @@ import "../src/Metamorphic.sol";
  *       !! unless called in the same tx as contract creation
  *       !! ===> kill a + factory instances INSIDE setUp below
  */
-
-/**
- * @notice CREATE => deploy @ address = f ( deployerAddress, NONCE of deployer account
- * @notice CREATE2 => deploy @ address = f ( deployerAddress + salt + bytecode to deploy )
- */
 contract MetamorphicTest is Test {
     A public a;
     B public b;
