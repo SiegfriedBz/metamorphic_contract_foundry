@@ -7,7 +7,7 @@ import "../src/Metamorphic.sol";
 /**
  * @notice on deployed contracts addresses
  * - CREATE => deploy @ address = f ( deployer address, NONCE of deployer account )
- * - CREATE2 => deploy @ address = f ( deployer address + salt + bytecode to deploy )
+ * - CREATE2 => deploy @ address = f ( deployer address + salt + initialization code of the contract that will be created )
  *
  * @notice SELFDESTRUCT
  * - "selfdestruct" has been deprecated
@@ -24,7 +24,7 @@ contract MetamorphicTest is Test {
     function setUp() public {
         /**
          * deploy factory with CREATE2
-         * !! => factory address = f ( deployerAddress + salt + factory bytecode )
+         * !! => factory address = f ( deployerAddress + salt + initialization code of the contract that will be created )
          */
         factory = new Factory{salt: keccak256(abi.encodePacked("eve"))}();
 
@@ -51,7 +51,7 @@ contract MetamorphicTest is Test {
     function test_Metamorphic() public {
         /**
          * deploy a NEW factory with CREATE2
-         * !! => factory address = f ( deployerAddress + salt + factory bytecode )
+         * !! => factory address = f ( deployerAddress + salt + initialization code of the contract that will be created )
          * !! ===> factory address is the SAME as in setUp + FRESH NONCE
          */
         factory = new Factory{salt: keccak256(abi.encodePacked("eve"))}();
