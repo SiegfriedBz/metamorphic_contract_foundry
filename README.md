@@ -1,66 +1,36 @@
-## Foundry
+# Metamorphic Contracts with Foundry
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+This Foundry project demonstrates the use of **metamorphic contracts** by leveraging a combination of `CREATE2`, `CREATE`, and `selfdestruct` to deploy different contracts (`A` and `B`) **at the same address** across separate transactions.
 
-Foundry consists of:
+## ⚙️ Overview
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+The pattern uses the fact that:
 
-## Documentation
+- `CREATE2` allows deploying a contract at a deterministic address based on the deployer address, salt, and bytecode.
+- `CREATE` computes new contract addresses using the sender's address and nonce.
+- `selfdestruct` (when used in the same transaction as deployment) can remove a contract and reset the nonce of the address, enabling redeployment of different logic to the **same address**.
 
-https://book.getfoundry.sh/
+> ⚠️ Note: As per [EIP-6780](https://eips.ethereum.org/EIPS/eip-6780) (introduced with the Cancun hard fork), `selfdestruct` only removes contract code and storage **if used in the same transaction as the deployment**.
 
-## Usage
+## 🧱 Contracts
 
-### Build
+- `A`: A simple contract with `getVersion()` and `kill()` (calls `selfdestruct`).
+- `B`: Another simple contract with only `getVersion()`.
+- `Factory`: Deploys `A` or `B` using `CREATE`, and can destroy itself via `selfdestruct`.
 
-```shell
-$ forge build
-```
+## 🧪 Test: `MetamorphicTest.t.sol`
 
-### Test
+The test workflow:
 
-```shell
-$ forge test
-```
+1. Deploy the `Factory` using `CREATE2`.
+2. Use it to deploy contract `A` via `CREATE`.
+3. Destroy `A` and the `Factory`.
+4. Redeploy the same `Factory` using `CREATE2` (same salt => same address).
+5. Use the new factory to deploy `B` via `CREATE` — **at the same address `A` previously occupied**.
+6. Assert that `address(A) == address(B)`.
 
-### Format
+## 🔁 Deployment Addresses Summary
 
-```shell
-$ forge fmt
-```
-
-### Gas Snapshots
-
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+- `Factory`: Deployed using `CREATE2` => address is deterministic.
+- `A` and `B`: Deployed using `CREATE` => address depends on factory’s address and nonce.
+- Because the factory is destroyed and recreated, the nonce is reset, enabling `B` to occupy the former address of `A`.
