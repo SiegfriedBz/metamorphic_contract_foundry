@@ -10,6 +10,7 @@ import "../src/Metamorphic.sol";
  * - CREATE2 => deploy @ address = f ( deployer address + salt + bytecode to deploy )
  *
  * @notice SELFDESTRUCT
+ * - "selfdestruct" has been deprecated
  *  - Transfers ETH to the caller
  *  - After Cancun (EIP-6780), this no longer removes code or resets nonce
  *       !! unless called in the same tx as contract creation
@@ -25,14 +26,6 @@ contract MetamorphicTest is Test {
     B public b;
     Factory public factory;
 
-    /**
-     * @notice "selfdestruct" has been deprecated. Note that, starting from the Cancun hard fork,
-     * the underlying opcode
-     * !! no longer deletes the code and data associated with an account and only transfers its Ether to the beneficiary,
-     * !! unless executed in the same transaction in which the contract was created (see EIP-6780).
-     *
-     * @dev ===> kill a + factory instances INSIDE setUp below
-     */
     function setUp() public {
         /**
          * deploy factory with CREATE2
