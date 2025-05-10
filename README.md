@@ -1,36 +1,59 @@
-# Metamorphic Contracts with Foundry
+## Metamorphic Contract demo with Foundry
 
-This Foundry project demonstrates the use of **metamorphic contracts** by leveraging a combination of `CREATE2`, `CREATE`, and `selfdestruct` to deploy different contracts (`A` and `B`) **at the same address** across separate transactions.
+This Foundry project demonstrates the use of metamorphic contracts by leveraging a combination of CREATE2, CREATE, and selfdestruct to deploy different contracts (A and B) at the same address across separate transactions.
 
-## ⚙️ Overview
+### ⚙️ Overview
 
-The pattern uses the fact that:
+This pattern is made possible by the interplay between:
 
-- `CREATE2` allows deploying a contract at a deterministic address based on the deployer address, salt, and bytecode.
-- `CREATE` computes new contract addresses using the sender's address and nonce.
-- `selfdestruct` (when used in the same transaction as deployment) can remove a contract and reset the nonce of the address, enabling redeployment of different logic to the **same address**.
+- CREATE2 → deploys contracts at deterministic addresses (based on deployer address, salt, and bytecode).
 
-> ⚠️ Note: As per [EIP-6780](https://eips.ethereum.org/EIPS/eip-6780) (introduced with the Cancun hard fork), `selfdestruct` only removes contract code and storage **if used in the same transaction as the deployment**.
+- CREATE → deploys contracts at addresses computed from the deployer's address and its current nonce.
 
-## 🧱 Contracts
+- selfdestruct → can remove a contract and (if used in the same transaction as deployment) resets the nonce of the corresponding account.
 
-- `A`: A simple contract with `getVersion()` and `kill()` (calls `selfdestruct`).
-- `B`: Another simple contract with only `getVersion()`.
-- `Factory`: Deploys `A` or `B` using `CREATE`, and can destroy itself via `selfdestruct`.
+⚠️ Note: As of [EIP-6780](https://eips.ethereum.org/EIPS/eip-6780) (introduced with the Cancun hard fork), selfdestruct only removes code and storage if used in the same transaction as deployment.
 
-## 🧪 Test: `MetamorphicTest.t.sol`
+### 🧱 Contracts
 
-The test workflow:
+- A: Simple contract exposing getVersion() and kill() (calls selfdestruct).
 
-1. Deploy the `Factory` using `CREATE2`.
-2. Use it to deploy contract `A` via `CREATE`.
-3. Destroy `A` and the `Factory`.
-4. Redeploy the same `Factory` using `CREATE2` (same salt => same address).
-5. Use the new factory to deploy `B` via `CREATE` — **at the same address `A` previously occupied**.
-6. Assert that `address(A) == address(B)`.
+- B: Similar to A, but with only getVersion().
 
-## 🔁 Deployment Addresses Summary
+- Factory: Deploys contracts A and B using CREATE, and can destroy itself with selfdestruct.
 
-- `Factory`: Deployed using `CREATE2` => address is deterministic.
-- `A` and `B`: Deployed using `CREATE` => address depends on factory’s address and nonce.
-- Because the factory is destroyed and recreated, the nonce is reset, enabling `B` to occupy the former address of `A`.
+The Factory contains deployment functions for both A and B, ensuring the bytecode remains consistent across deployments (important for CREATE2 determinism).
+
+### 🧪 Test: MetamorphicTest.t.sol
+
+The test follows this sequence:
+
+- Deploy Factory with CREATE2 (using a fixed salt).
+
+- Use the factory to deploy contract A via CREATE.
+
+- Call kill() on A to destroy it.
+
+- Destroy the Factory.
+
+- Redeploy the same Factory (same salt → same address) using CREATE2.
+
+- Use the new factory to deploy contract B via CREATE.
+
+- Assert that address(A) == address(B) — i.e., B replaces A at the same address.
+
+### 🔁 Deployment Addresses Summary
+
+- Factory: Deployed using CREATE2 → deterministic address.
+
+- A and B: Deployed using CREATE → address depends on Factory’s address and its nonce.
+
+Because the factory is destroyed and recreated, its nonce resets, enabling B to be deployed at the same address as A.
+
+### 🚀 Getting Started
+
+```bash
+git clone https://github.com/SiegfriedBz/metamorphic_contract_foundry .
+forge install
+forge test -vvv
+```
